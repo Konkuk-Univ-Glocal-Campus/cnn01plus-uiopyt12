@@ -14,7 +14,7 @@ import glob
 import os
 import zipfile 
 
-default_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+default_device = 'cuda' if torch.cuda.is_available() else 'cpu' #gpu가 있으면 gpu를 없으면, cpu를 사용 (코드스페이스에선 소용x)
 
 # Python에서 MNIST 데이터셋을 불러와서 처리하는 과정
 # 이 함수를 실행하면, builtins 모듈을 통해 전역 변수로 설정된 data_train, data_test, train_loader, test_loader가 생성되어 어디서든 접근할 수 있게 됩니다. 이러한 설정은 함수 내에서 데이터를 처리하고, 이후에 다른 부분에서 해당 데이터를 사용할 때 유용하게 활용될 수 있음
@@ -32,12 +32,12 @@ def load_mnist(batch_size=64): # load_mnist라는 이름의 함수를 정의하�
 
 def train_epoch(net,dataloader,lr=0.01,optimizer=None,loss_fn = nn.NLLLoss()): # 이 함수는 여러 매개변수를 받는데, net은 학습할 신경망 모델, dataloader는 데이터 로더, lr은 학습률(기본값 0.01), optimizer는 최적화 도구(기본값은 None), loss_fn은 손실 함수로 기본적으로 Negative Log Likelihood Loss를 사용
     optimizer = optimizer or torch.optim.Adam(net.parameters(),lr=lr) # 최적화 도구가 제공되지 않았다면, Adam 최적화 도구를 사용하여 신경망의 매개변수를 최적화하며, 학습률은 lr로 설정
-    net.train() # 모델을 학습 모드로 설정합니다. 이는 일부 신경망 계층(예: 드롭아웃 계층)이 학습과 평가 모드에서 다르게 동작하기 때문에 필요
+    net.train() # 모델을 학습 모드로 설정합니다. 이는 일부 신경망 계층(예: 드롭아웃 계층)이 학습과 평가 모드에서 다르게 동작하기 때문에 필요 / net.evlauation() 모드도 있음 (파라미터를 변경하지 않음)
     total_loss,acc,count = 0,0,0 # 총 손실, 정확도, 처리한 샘플 수를 초기화
     for features,labels in dataloader: # 데이터 로더로부터 특징(feature)과 레이블(label)을 반복적으로 가져옴
         optimizer.zero_grad() # 최적화 도구의 모든 기울기를 0으로 초기화하는데 새로운 가중치 업데이트를 위해 필수
         lbls = labels.to(default_device) # 레이블을 기본 계산 장치(예: GPU)로 이동
-        out = net(features.to(default_device)) # 특징을 같은 장치로 이동시킨 후, 신경망을 통해 예측을 수행
+        out = net(features.to(default_device)) # 특징을 같은 장치로 이동시킨 후, 신경망을 통해 예측을 수행   -    (특성과 lable이 같은 device에 있어야 함 - 0번 gpu, 1번 gpu, ...)
         loss = loss_fn(out,lbls) #cross_entropy(out,labels) 예측 결과와 레이블을 이용해 손실을 계산
         loss.backward() # 손실에 대한 기울기를 계산
         optimizer.step() # 계산된 기울기를 이용해 신경망의 가중치를 업데이트
@@ -103,7 +103,7 @@ def train_long(net,train_loader,test_loader,epochs=5,lr=0.01,optimizer=None,loss
 
 # 학습 및 검증 데이터에 대한 정확도와 손실을 시각화하는 Python 함수인데 Matplotlib 라이브러리를 사용하여 결과를 그래프로 표시
 
-def plot_results(hist): # plot_results라는 함수를 정의하는데 hist라는 이름의 딕셔너리를 매개변수로 받는데 학습과 검증 과정의 정확도와 손실이 배열 형태로 저장되어 있음
+def plot_results(hist): # plot_results라는 함수를 정의하는데 hist라는 이름의 딕셔너리를 매개변수로 받는데 학습과 검증 과정의 정확도와 손실이 배열 형태로 저장되어 있음  -  시각화 함수(쓰면 좋음)
     plt.figure(figsize=(15,5)) # 새로운 그래프 창을 만들고, 크기를 가로 15인치, 세로 5인치로 설정
     plt.subplot(121) # 두 개의 그래프를 나란히 표시하기 위해 첫 번째 위치(1행 2열의 첫 번째)에 서브플롯을 생성
     plt.plot(hist['train_acc'], label='Training acc') # hist 딕셔너리에서 학습 정확도(train_acc)를 추출하여 그래프로 그리는데 라벨을 'Training acc'로 지정하여 그래프에 범례를 추가
@@ -136,7 +136,7 @@ def plot_convolution(t,title=''): # 함수를 정의하고, 두 개의 매개변
 
 # 주어진 데이터셋에서 이미지를 선택하여 시각화하는 Python 함수 display_dataset을 정의하는데 이미지 데이터셋, 표시할 이미지의 수, 그리고 선택적으로 클래스 레이블을 포함할 수 있음
 
-def display_dataset(dataset, n=10,classes=None): # display_dataset 함수를 정의하며, 매개변수로는 dataset (이미지와 레이블을 포함하는 데이터셋), n (표시할 이미지 수, 기본값은 10), classes (클래스 레이블 이름 배열, 선택적)를 받음
+def display_dataset(dataset, n=10,classes=None): # display_dataset 함수를 정의하며, 매개변수로는 dataset (이미지와 레이블을 포함하는 데이터셋), n (표시할 이미지 수, 기본값은 10), classes (클래스 레이블 이름 배열, 선택적)를 받음  -  한 번 사용해보려 시도??
     fig,ax = plt.subplots(1,n,figsize=(15,3)) # 1행 n열의 서브플롯을 생성하고, 전체 그래프의 크기를 가로 15인치, 세로 3인치로 설정
     mn = min([dataset[i][0].min() for i in range(n)]) # 데이터셋에서 선택된 이미지들 중 픽셀 값의 최소값을 계산하는데 값은 이미지 정규화에 사용
     mx = max([dataset[i][0].max() for i in range(n)]) # 데이터셋에서 선택된 이미지들 중 픽셀 값의 최대값을 계산하는데 값은 이미지 정규화에 사용
@@ -148,7 +148,7 @@ def display_dataset(dataset, n=10,classes=None): # display_dataset 함수를 정
 
 # 주어진 파일 이름(fn)에 해당하는 이미지 파일을 검사하여 파일이 유효한 이미지인지 확인하는 Python 함수 check_image를 정의
 
-def check_image(fn): # check_image라는 이름의 함수를 정의하며, 매개변수로 파일 이름 fn을 받음
+def check_image(fn): # check_image라는 이름의 함수를 정의하며, 매개변수로 파일 이름 fn을 받음  -  아마 사용 안할 듯?
     try: # 예외 처리를 시작하는 블록인데 안에서 이미지 파일을 열고 검증을 시도
         im = Image.open(fn) # Image.open(fn)을 사용하여 파일 fn을 열고, im 객체에 할당하는데 여기서 Image는 파이썬의 PIL(Pillow) 라이브러리에서 제공하는 모듈이고 이 함수는 이미지 파일을 불러오는 데 사용
         im.verify() # im.verify() 메소드를 호출하여 이미지 데이터가 손상되었는지 또는 파일이 손상된 이미지 포맷을 포함하고 있는지 검증하는데 파일을 읽을 때 발생할 수 있는 다양한 예외를 감지할 수 있고 이미지 파일이 유효하다면 이 부분은 문제없이 실행
